@@ -180,7 +180,7 @@ for (const caso of casos) {
 
   const gastado = totalGastadoPorPersona(caso.gastos);
   const consumido = totalConsumidoPorPersona(caso.gastos);
-  const personas = new Set([...Object.keys(gastado), ...Object.keys(consumido)]);
+  const personas = Array.from(new Set([...Object.keys(gastado), ...Object.keys(consumido)]));
 
   console.log("Gastó / Consumió por persona:");
   for (const persona of personas) {
