@@ -6,21 +6,74 @@ import {
   type EstadoFormulario,
   type GastoForm,
 } from "@/lib/gastos/tipos-formulario";
-import type { ResultadoValidacion } from "@/lib/gastos/validacion";
+import { validarFormulario, type ResultadoValidacion } from "@/lib/gastos/validacion";
+import { mapearInterpretacionAFormulario } from "@/lib/gastos/ia/mapear";
 
 interface Props {
   estado: EstadoFormulario;
   setEstado: Dispatch<SetStateAction<EstadoFormulario>>;
   validacion: ResultadoValidacion | null;
+  setValidacion: Dispatch<SetStateAction<ResultadoValidacion | null>>;
   onContinuar: () => void;
 }
 
-export default function PasoCarga({ estado, setEstado, validacion, onContinuar }: Props) {
+export default function PasoCarga({
+  estado,
+  setEstado,
+  validacion,
+  setValidacion,
+  onContinuar,
+}: Props) {
+  const [modoIngreso, setModoIngreso] = useState<"texto" | "manual">("texto");
+  const [textoLibre, setTextoLibre] = useState("");
+  const [cargandoIA, setCargandoIA] = useState(false);
+  const [errorIA, setErrorIA] = useState<string | null>(null);
+  const [advertenciasIA, setAdvertenciasIA] = useState<string[]>([]);
+  const [vieneDeIA, setVieneDeIA] = useState(false);
+
   const [nuevoParticipante, setNuevoParticipante] = useState("");
   const [errorParticipante, setErrorParticipante] = useState<string | null>(null);
   const [editando, setEditando] = useState<string | null>(null);
   const [valorEdicion, setValorEdicion] = useState("");
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null);
+
+  async function interpretarTexto() {
+    const texto = textoLibre.trim();
+    if (!texto) {
+      setErrorIA("Escribí una descripción del gasto antes de interpretar.");
+      return;
+    }
+
+    setCargandoIA(true);
+    setErrorIA(null);
+    setAdvertenciasIA([]);
+
+    try {
+      const respuesta = await fetch("/api/interpretar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto }),
+      });
+
+      const json = await respuesta.json();
+
+      if (!respuesta.ok || json.codigo !== "ok") {
+        setErrorIA(json?.mensaje ?? "No se pudo interpretar el texto. Probá la carga manual.");
+        return;
+      }
+
+      const nuevoEstado = mapearInterpretacionAFormulario(json.data);
+      setEstado(nuevoEstado);
+      setValidacion(validarFormulario(nuevoEstado));
+      setAdvertenciasIA(json.data.advertencias ?? []);
+      setVieneDeIA(true);
+      setModoIngreso("manual");
+    } catch {
+      setErrorIA("No se pudo conectar con el servicio de interpretación. Probá la carga manual.");
+    } finally {
+      setCargandoIA(false);
+    }
+  }
 
   function agregarParticipante() {
     const nombre = nuevoParticipante.trim();
@@ -144,8 +197,87 @@ export default function PasoCarga({ estado, setEstado, validacion, onContinuar }
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex gap-2 rounded-md bg-slate-100 p-1">
+        <button
+          type="button"
+          onClick={() => setModoIngreso("texto")}
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${
+            modoIngreso === "texto" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+          }`}
+        >
+          Texto libre
+        </button>
+        <button
+          type="button"
+          onClick={() => setModoIngreso("manual")}
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${
+            modoIngreso === "manual" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+          }`}
+        >
+          Manual
+        </button>
+      </div>
+
+      {modoIngreso === "texto" && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-slate-900">Describí el gasto</h2>
+          <p className="text-sm text-slate-500">
+            Ej: &ldquo;Pagué 60.000 de la cena de ayer entre Juan, Rodrigo y yo&rdquo;
+          </p>
+          <textarea
+            value={textoLibre}
+            onChange={(e) => setTextoLibre(e.target.value)}
+            rows={4}
+            placeholder="Contanos qué se gastó, quién pagó y entre quiénes..."
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
+          {errorIA && (
+            <p className="text-sm text-red-600">
+              {errorIA}{" "}
+              <button
+                type="button"
+                onClick={() => setModoIngreso("manual")}
+                className="underline"
+              >
+                Ir a carga manual
+              </button>
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={interpretarTexto}
+            disabled={cargandoIA}
+            className="rounded-md bg-slate-900 px-4 py-3 text-base font-medium text-white disabled:opacity-50"
+          >
+            {cargandoIA ? "Interpretando..." : "Interpretar"}
+          </button>
+        </section>
+      )}
+
+      {modoIngreso === "manual" && vieneDeIA && (
+        <div className="rounded-md border border-sky-300 bg-sky-50 p-3 text-sm text-sky-800">
+          Revisá que tus gastos se hayan interpretado correctamente antes de continuar.
+        </div>
+      )}
+
+      {modoIngreso === "manual" && advertenciasIA.length > 0 && (
+        <div className="flex flex-col gap-1 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          {advertenciasIA.map((a) => (
+            <p key={a}>{a}</p>
+          ))}
+        </div>
+      )}
+
+      {modoIngreso === "manual" && (
+      <>
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold text-slate-900">Participantes</h2>
+
+        {estado.participantes.includes("Vos") && (
+          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            ⚠️ Reemplazá &ldquo;Vos&rdquo; por tu nombre real (tocá el ✎) para que el resultado se entienda al compartirlo.
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2">
           {estado.participantes.map((participante) =>
@@ -191,8 +323,13 @@ export default function PasoCarga({ estado, setEstado, validacion, onContinuar }
             ) : (
               <span
                 key={participante}
-                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-800"
+                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm ${
+                  participante === "Vos"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-slate-100 text-slate-800"
+                }`}
               >
+                {participante === "Vos" && "⚠️ "}
                 {participante}
                 <button
                   type="button"
@@ -412,6 +549,8 @@ export default function PasoCarga({ estado, setEstado, validacion, onContinuar }
       >
         Revisar cálculo
       </button>
+      </>
+      )}
     </div>
   );
 }

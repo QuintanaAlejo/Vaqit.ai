@@ -65,6 +65,7 @@ export default function CalculadoraGastos() {
           estado={estado}
           setEstado={setEstado}
           validacion={validacion}
+          setValidacion={setValidacion}
           onContinuar={revisar}
         />
       )}

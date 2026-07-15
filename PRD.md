@@ -50,7 +50,7 @@ Su usuario principal es quien organiza el gasto: la persona que pagó (o central
 - RF-17: El sistema debe permitir la carga de un gasto de forma 100% manual a través de un formulario tradicional (monto, pagador y montos por participante) como alternativa de respaldo cuando la IA no esté disponible o no interprete correctamente el texto.
 
 ## Requerimientos No Funcionales
-- RNF-01: El procesamiento, extracción y parseo del texto para transformarlo en datos estructurados de gasto debe responder en un tiempo < 5 segundos en el percentil 95 (p95).
+- RNF-01: El procesamiento, extracción y parseo del texto para transformarlo en datos estructurados de gasto debe responder en un tiempo < 10 segundos en el percentil 95 (p95). (Ajustado de 5s a 10s por la latencia observada en los modelos gratuitos de OpenRouter usados en el MVP; revisar al migrar a un proveedor de pago.)
 
 - RNF-02: El sistema no debe requerir registro, login ni instalación para completar el flujo completo (cargar gasto → revisar → confirmar → compartir).
 
