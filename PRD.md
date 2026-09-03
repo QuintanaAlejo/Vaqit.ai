@@ -1,8 +1,5 @@
 # PRD-001: Calculadora rápida de división de gastos grupales con IA
 
-## Decisión de alcance (respuesta a revisión)
-El MVP sera una herramienta de uso puntual: el usuario entra, describe el gasto en lenguaje natural (o lo carga manualmente), el sistema calcula quién le debe a quién según el consumo real de cada persona (no necesariamente equitativo), y el usuario comparte el resultado por WhatsApp. No hay cuentas, no hay login, no hay grupos guardados ni historial persistente entre sesiones. Quedan documentados como **Fuera de Alcance** más abajo para una eventual v2.
-
 ## Contexto y Problema
 Dividir gastos en grupos (viajes, cenas, eventos) es un proceso tedioso que suele generar fricción y pérdida de tiempo. Las herramientas tradicionales obligan a los usuarios a rellenar formularios campo por campo o a forzar divisiones equitativas cuando el consumo real fue asimétrico. Además, suelen ser aplicaciones móviles que hay que tener instaladas para usarlas muy ocasionalmente.
 
