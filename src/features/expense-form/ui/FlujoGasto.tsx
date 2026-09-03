@@ -130,7 +130,7 @@ export function FlujoGasto() {
   const gastos = borradorAGastos(sesion);
   const saldos = calcularSaldosNetos(gastos);
   const transferencias = calcularTransferencias(saldos);
-  const resumen = generarResumen(transferencias);
+  const resumen = generarResumen(gastos, transferencias);
 
   return (
     <div className="flex flex-col gap-4">

@@ -27,15 +27,49 @@ function netoDe(saldos: SaldoNeto[], participante: string): number {
 }
 
 describe("repartirEquitativo — RF-08", () => {
-  it("divide sin perder centavos cuando el total no es divisible", () => {
-    const consumos = repartirEquitativo(10_000, ["Juan", "Rodri", "Vos"]);
-    expect(consumos.map((c) => c.montoCentavos)).toEqual([3334, 3333, 3333]);
-    expect(consumos.reduce((acc, c) => acc + c.montoCentavos, 0)).toBe(10_000);
-  });
-
   it("divide en partes exactas cuando el total es divisible", () => {
     const consumos = repartirEquitativo(6_000_000, ["Juan", "Rodrigo", "Vos"]);
     expect(consumos.map((c) => c.montoCentavos)).toEqual([2_000_000, 2_000_000, 2_000_000]);
+  });
+
+  it("redondea la parte de cada uno al peso entero", () => {
+    // $100 entre 3 son $33,33 cada uno; se reparte $33 y el resto va al pagador.
+    const consumos = repartirEquitativo(10_000, ["Juan", "Rodri", "Vos"]);
+    expect(consumos.map((c) => c.montoCentavos)).toEqual([3400, 3300, 3300]);
+    expect(consumos.every((c) => c.montoCentavos % 100 === 0)).toBe(true);
+  });
+
+  it("le deja el resto al pagador", () => {
+    const consumos = repartirEquitativo(10_000, ["Juan", "Rodri", "Vos"], "Rodri");
+    expect(consumos).toEqual([
+      { participante: "Juan", montoCentavos: 3300 },
+      { participante: "Rodri", montoCentavos: 3400 },
+      { participante: "Vos", montoCentavos: 3300 },
+    ]);
+  });
+
+  it("identifica al pagador sin importar como este escrito", () => {
+    const consumos = repartirEquitativo(10_000, ["Juan", "Rodri", "Vos"], "RODRI");
+    expect(consumos[1]?.montoCentavos).toBe(3400);
+  });
+
+  it("si el pagador no consumio, el resto lo absorbe el primero", () => {
+    // Alguien tiene que absorberlo o los saldos netos no cierran en cero.
+    const consumos = repartirEquitativo(10_000, ["Juan", "Rodri", "Vos"], "Ana");
+    expect(consumos[0]?.montoCentavos).toBe(3400);
+  });
+
+  it("la suma siempre da exactamente el total, sin perder ni un centavo", () => {
+    for (const total of [10_000, 4_000_000, 500_000, 100_099, 1, 7]) {
+      for (const cantidad of [1, 2, 3, 5, 7]) {
+        const participantes = Array.from({ length: cantidad }, (_, i) => `P${i}`);
+        const consumos = repartirEquitativo(total, participantes, "P0");
+        expect(
+          consumos.reduce((acc, c) => acc + c.montoCentavos, 0),
+          `total=${total} cantidad=${cantidad}`,
+        ).toBe(total);
+      }
+    }
   });
 
   it("devuelve vacio sin participantes", () => {

@@ -1,4 +1,4 @@
-import { claveParticipante, PLACEHOLDER_VOS } from "@/shared/domain/expense";
+import { capitalizarInicial, claveParticipante, PLACEHOLDER_VOS } from "@/shared/domain/expense";
 import { parseMonto } from "@/shared/domain/money";
 import type { GastoInterpretado } from "./contract";
 import type { RespuestaModelo } from "./parseResponseSchema";
@@ -30,7 +30,7 @@ function normalizarGasto(gasto: RespuestaModelo["gastos"][number]): GastoInterpr
   const modoReparto = gasto.modoReparto;
 
   return {
-    descripcion: gasto.descripcion.trim(),
+    descripcion: capitalizarInicial(gasto.descripcion),
     montoTotalCentavos,
     pagador:
       gasto.pagador === null || gasto.pagador === "" ? null : normalizarNombre(gasto.pagador),
@@ -63,7 +63,8 @@ const VARIANTES_PRIMERA_PERSONA = new Set(
 function normalizarNombre(crudo: string | null): string {
   const nombre = (crudo ?? "").trim();
   if (nombre === "") return "";
-  return VARIANTES_PRIMERA_PERSONA.has(claveParticipante(nombre)) ? PLACEHOLDER_VOS : nombre;
+  if (VARIANTES_PRIMERA_PERSONA.has(claveParticipante(nombre))) return PLACEHOLDER_VOS;
+  return capitalizarInicial(nombre);
 }
 
 /**

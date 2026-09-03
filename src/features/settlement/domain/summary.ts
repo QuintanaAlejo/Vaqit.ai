@@ -1,5 +1,6 @@
 import { formatMonto } from "@/shared/domain/money";
-import type { Transferencia } from "@/shared/domain/expense";
+import type { Gasto, Transferencia } from "@/shared/domain/expense";
+import { calcularConsumoPorPersona, calcularTotalGastado, type ConsumoTotal } from "./balances";
 
 /**
  * Genera el resumen compartible (RF-14).
@@ -12,8 +13,16 @@ import type { Transferencia } from "@/shared/domain/expense";
 /** Caracteres que WhatsApp (y la mayoria de los clientes) interpretan como marcado. */
 const CARACTERES_DE_MARCADO = /[*_~#`<>]/;
 
-export function generarResumen(transferencias: Transferencia[]): string {
+const CENTAVOS_POR_PESO = 100;
+
+export function generarResumen(gastos: Gasto[], transferencias: Transferencia[]): string {
   const lineas: string[] = ["Vaqit.ai - Cuentas del grupo", ""];
+
+  if (gastos.length > 0) {
+    lineas.push(`Total gastado: ${formatMonto(calcularTotalGastado(gastos))}`);
+    lineas.push(...lineasDeConsumo(gastos));
+    lineas.push("");
+  }
 
   if (transferencias.length === 0) {
     lineas.push("Nadie le debe nada a nadie: todos los saldos quedaron en cero.");
@@ -22,10 +31,53 @@ export function generarResumen(transferencias: Transferencia[]): string {
       lineas.push(`${t.deudor} le debe ${formatMonto(t.montoCentavos)} a ${t.acreedor}`);
     }
     const total = transferencias.reduce((acc, t) => acc + t.montoCentavos, 0);
-    lineas.push("", `Total a saldar: ${formatMonto(total)}`);
+    lineas.push("", `Diferencia a saldar: ${formatMonto(total)}`);
   }
 
   return lineas.join("\n");
+}
+
+/**
+ * Cuanto consumio cada uno. Si consumieron todos lo mismo se resume en una
+ * linea; si hubo consumos distintos se listan uno por uno, que es el caso que
+ * el grupo necesita ver detallado para entender el reparto.
+ */
+function lineasDeConsumo(gastos: Gasto[]): string[] {
+  const consumos = calcularConsumoPorPersona(gastos);
+  if (consumos.length === 0) return [];
+
+  if (consumos.length === 1) {
+    const unico = consumos[0];
+    return unico === undefined
+      ? []
+      : [`Consumo de ${unico.participante}: ${formatMonto(unico.montoCentavos)}`];
+  }
+
+  if (consumieronLoMismo(consumos, gastos.length)) {
+    // Se muestra al peso entero, igual que los consumos reales: decir
+    // "$33,33 cada uno" cuando el reparto asigno $33 seria contradecirse.
+    const parteIgual =
+      Math.round(calcularTotalGastado(gastos) / consumos.length / CENTAVOS_POR_PESO) *
+      CENTAVOS_POR_PESO;
+    return [`Consumo: ${formatMonto(parteIgual)} cada uno`];
+  }
+
+  return [
+    "",
+    "Consumo de cada uno:",
+    ...consumos.map((c) => `${c.participante}: ${formatMonto(c.montoCentavos)}`),
+  ];
+}
+
+/**
+ * Un reparto equitativo no siempre da montos identicos: cada gasto redondea la
+ * parte de cada uno al peso entero y le deja el resto al pagador. Una diferencia
+ * de hasta un peso por gasto es ese redondeo, no un consumo distinto, y listarla
+ * como tal llenaria el mensaje de renglones que difieren en un peso.
+ */
+function consumieronLoMismo(consumos: ConsumoTotal[], cantidadDeGastos: number): boolean {
+  const montos = consumos.map((c) => c.montoCentavos);
+  return Math.max(...montos) - Math.min(...montos) <= cantidadDeGastos * CENTAVOS_POR_PESO;
 }
 
 /**

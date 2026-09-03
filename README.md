@@ -66,8 +66,13 @@ React), `data` habla con servicios externos. `ui` nunca importa de `data`.
 ### Todos los montos son enteros en centavos
 
 Se parsean con `parseMonto()` (`shared/domain/money.ts`) y no se vuelven a tocar como float. El
-redondeo existe en un solo lugar: `repartirEquitativo()`, que distribuye los centavos sobrantes
-entre los primeros participantes para que la suma de consumos siempre cuadre con el total.
+redondeo existe en un solo lugar: `repartirEquitativo()` (`shared/domain/split.ts`), que redondea la
+parte de cada uno **al peso entero** y le deja el resto al pagador. Así el resumen que se comparte no
+tiene centavos: sin esto, un gasto de $40.000 entre tres produce mensajes como
+`"Rodri le debe $14.999,99"`, que se leen como un error aunque sean exactos.
+
+El resto tiene que asignarse a alguien sí o sí: si la suma de los consumos no diera exactamente el
+total, los saldos netos no cerrarían en cero y la matriz de transferencias quedaría descompensada.
 
 ### Los montos vuelven del modelo como texto
 
@@ -93,6 +98,11 @@ Su política de retención es una dependencia abierta del PRD: conviene revisarl
 **Un separador con tres dígitos a la derecha es de miles.** `"60.000"` son sesenta mil, lo que
 implica que `"10,004"` se lee como diez mil cuatro y no como diez con cuatro milésimas. Es la
 lectura correcta para montos en es-AR.
+
+**El pagador absorbe el resto del redondeo.** Cuando un gasto no es divisible entre los
+participantes, cada uno recibe una parte redondeada al peso y la diferencia (a lo sumo unos pesos) la
+absorbe quien pagó. Es lo que mantiene el resumen libre de centavos sin que los saldos dejen de
+cuadrar.
 
 **Si los consumos no suman el total, se bloquea la confirmación.** El PRD no lo especifica; la
 alternativa era que el pagador absorbiera la diferencia en silencio, que produce un resultado
@@ -138,7 +148,12 @@ Recorre la cadena completa —proveedor, normalización, validación, cálculo y
 literales del PRD. Es lo que detecta una regresión del prompt o un cambio de comportamiento del
 modelo, que ningún test con respuestas simuladas puede ver.
 
-**Sobre el centavo del AC-02:** el PRD dice "$20.000 por persona", pero $40.000 y $5.000 no son
-divisibles por 3. El reparto asigna el centavo sobrante al primer participante, así que los saldos
-caen a uno o dos centavos de la cifra redonda. El test compara con tolerancia y verifica en cambio
-el invariante que sí es exacto: la suma de todos los saldos netos da cero.
+**Sobre el AC-02:** el PRD dice "$20.000 por persona", pero $40.000 y $5.000 no son divisibles por
+3. Como el reparto redondea al peso, los saldos caen a unos pesos de la cifra redonda. El test
+compara con tolerancia y verifica en cambio el invariante que sí es exacto: la suma de todos los
+saldos netos da cero.
+
+**Sobre la latencia:** los modelos gratuitos de OpenRouter superan de vez en cuando el timeout de 9
+segundos del cliente. No es un fallo de la app —el usuario recibe el error y la carga manual como
+salida— pero volvería inutilizable a esta suite, así que reintenta hasta tres veces antes de dar un
+caso por perdido.

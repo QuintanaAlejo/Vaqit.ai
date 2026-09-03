@@ -64,16 +64,18 @@ describe("AC-14 end to end desde el formulario", () => {
     const transferencias = calcularTransferencias(saldos);
     expect(transferencias).toHaveLength(2);
 
-    const resumen = generarResumen(transferencias);
+    const resumen = generarResumen(borradorAGastos(sesion), transferencias);
     expect(resumen).toContain("Juan le debe $10.000 a Vos");
     expect(resumen).toContain("Rodri le debe $10.000 a Vos");
-    expect(resumen).toContain("Total a saldar: $20.000");
+    expect(resumen).toContain("Diferencia a saldar: $20.000");
+    expect(resumen).toContain("Total gastado: $90.000");
     expect(esTextoPlano(resumen)).toBe(true);
   });
 
   it("usa el nombre real en el resumen despues de reemplazar el placeholder (AC-02)", () => {
     const conNombre = renombrarParticipante(sesion, "Vos", "Ale");
     const resumen = generarResumen(
+      borradorAGastos(conNombre),
       calcularTransferencias(calcularSaldosNetos(borradorAGastos(conNombre))),
     );
     expect(resumen).toContain("Juan le debe $10.000 a Ale");
@@ -150,7 +152,9 @@ describe("AC-13 end to end: pagos cruzados que se compensan", () => {
   it("no genera ninguna transferencia y el resumen lo dice explicitamente", () => {
     const transferencias = calcularTransferencias(calcularSaldosNetos(borradorAGastos(sesion)));
     expect(transferencias).toEqual([]);
-    expect(generarResumen(transferencias)).toContain("Nadie le debe nada a nadie");
+    expect(generarResumen(borradorAGastos(sesion), transferencias)).toContain(
+      "Nadie le debe nada a nadie",
+    );
   });
 });
 

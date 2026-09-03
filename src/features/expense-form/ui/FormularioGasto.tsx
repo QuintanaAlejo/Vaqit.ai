@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { esPlaceholderVos, type BorradorGasto } from "@/shared/domain/expense";
+import { esMismoParticipante, esPlaceholderVos, type BorradorGasto } from "@/shared/domain/expense";
 import { parseMonto } from "@/shared/domain/money";
 import { participantesDeSesion } from "@/features/expense-form/domain/borrador";
 import type { ProblemaValidacion } from "@/features/expense-form/domain/validation";
@@ -93,6 +93,12 @@ function GastoEditable({
   const erroresParticipantes = errores.filter((e) => e.campo === "participante" && !e.consumoId);
   const errorTotalConsumos = errores.find((e) => e.campo === "consumo" && !e.consumoId);
 
+  // El value del select tiene que coincidir caracter por caracter con un
+  // <option>. Si el pagador quedo escrito distinto que en la lista ("juan" vs
+  // "Juan"), sin esto el campo se veria vacio aunque el pagador este cargado.
+  const valorPagador =
+    participantes.find((nombre) => esMismoParticipante(nombre, gasto.pagador ?? "")) ?? "";
+
   const cambiarMonto = (texto: string) => {
     dispatch({ tipo: "setTexto", clave: claveMonto(gasto.id), texto });
     dispatch({
@@ -159,7 +165,7 @@ function GastoEditable({
         <Select
           id={`${idBase}-pagador`}
           alerta={errorPagador !== undefined || avisoPagador !== undefined}
-          value={gasto.pagador ?? ""}
+          value={valorPagador}
           onChange={(e) =>
             dispatch({
               tipo: "editarGasto",

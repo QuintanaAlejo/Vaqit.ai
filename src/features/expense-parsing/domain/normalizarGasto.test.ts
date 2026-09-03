@@ -270,3 +270,58 @@ describe("normalizarRespuesta — tolerancia a respuestas imperfectas", () => {
     expect(desdeModelo({ gastos: [] })).toEqual([]);
   });
 });
+
+describe("capitalizacion al pasar a la revision manual", () => {
+  it("capitaliza descripciones y nombres que la IA devolvio en minuscula", () => {
+    const gastos = desdeModelo({
+      gastos: [
+        {
+          descripcion: "cena de ayer",
+          montoTotal: "60.000",
+          pagador: "juan",
+          modoReparto: "individual",
+          consumos: [
+            { participante: "juan", monto: "30.000" },
+            { participante: "rodri", monto: "30.000" },
+          ],
+        },
+      ],
+    });
+
+    expect(gastos[0]?.descripcion).toBe("Cena de ayer");
+    expect(gastos[0]?.pagador).toBe("Juan");
+    expect(gastos[0]?.consumos.map((c) => c.participante)).toEqual(["Juan", "Rodri"]);
+  });
+
+  it("deja intacto lo que ya venia capitalizado", () => {
+    const gastos = desdeModelo({
+      gastos: [
+        {
+          descripcion: "Traslado",
+          montoTotal: "1000",
+          pagador: "Ana",
+          modoReparto: "equitativo",
+          consumos: [{ participante: "Ana", monto: null }],
+        },
+      ],
+    });
+    expect(gastos[0]?.descripcion).toBe("Traslado");
+    expect(gastos[0]?.pagador).toBe("Ana");
+  });
+
+  it("el placeholder Vos sigue siendo Vos", () => {
+    const gastos = desdeModelo({
+      gastos: [
+        {
+          descripcion: "bebida",
+          montoTotal: "1000",
+          pagador: "yo",
+          modoReparto: "equitativo",
+          consumos: [{ participante: "mí", monto: null }],
+        },
+      ],
+    });
+    expect(gastos[0]?.pagador).toBe("Vos");
+    expect(gastos[0]?.consumos[0]?.participante).toBe("Vos");
+  });
+});

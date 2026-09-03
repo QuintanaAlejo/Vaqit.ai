@@ -194,7 +194,7 @@ export function borradorAGastos(sesion: BorradorSesion): Gasto[] {
 
     const consumos =
       borrador.modoReparto === "equitativo"
-        ? repartirEquitativo(montoTotalCentavos, participantes)
+        ? repartirEquitativo(montoTotalCentavos, participantes, pagador)
         : borrador.consumos
             .filter((c) => c.participante.trim() !== "" && c.montoCentavos !== null)
             .map((c) => ({

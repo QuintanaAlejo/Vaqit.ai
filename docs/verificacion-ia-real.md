@@ -46,7 +46,12 @@ $19.999,99 en lugar de $20.000.
 
 No es un error: es aritmética inevitable, y el invariante que importa se mantiene exacto — la suma de
 todos los saldos netos da cero y no se pierde ningún centavo. El test compara los saldos con
-tolerancia de unos centavos y verifica la suma en cero de forma estricta.
+tolerancia y verifica la suma en cero de forma estricta.
+
+> **Actualización posterior.** Los centavos se veían mal en el mensaje de WhatsApp
+> (`"Rodri le debe $14.999,99"`), así que el reparto pasó a redondear la parte de cada uno al peso
+> entero y a dejarle el resto al pagador. Los mensajes ya no muestran centavos; la tolerancia del
+> test ahora se mide en pesos.
 
 ## Resultado
 
@@ -64,8 +69,10 @@ Ocho casos contra el proveedor real, todos en verde:
 | RNF-05 | El monto se interpreta sea cual sea el formato en que se escriba |
 
 **Latencias observadas**: entre 1,4 y 6,9 segundos por llamada, todas dentro del presupuesto de
-RNF-01. En una corrida temprana un caso llegó a 9 segundos y cortó por timeout, así que la latencia
-del free tier es variable y el margen no es enorme. El test reintenta una vez por ese motivo.
+RNF-01. Pero en varias corridas algún caso llegó a los 9 segundos y cortó por timeout: la latencia
+del free tier es errática y el margen no es holgado. No es un fallo de la app —el usuario recibe el
+error y la carga manual como salida— pero vuelve inestable a esta suite, así que reintenta hasta
+tres veces antes de dar un caso por perdido.
 
 ## Cómo correrlo
 

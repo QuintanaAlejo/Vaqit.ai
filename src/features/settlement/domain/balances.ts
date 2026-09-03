@@ -40,3 +40,45 @@ function ordenarPorNetoDescendente(a: SaldoNeto, b: SaldoNeto): number {
   if (a.netoCentavos !== b.netoCentavos) return b.netoCentavos - a.netoCentavos;
   return a.participante.localeCompare(b.participante, "es-AR");
 }
+
+/** Lo que consumio cada participante sumando todos los gastos de la sesion. */
+export type ConsumoTotal = {
+  participante: string;
+  montoCentavos: number;
+};
+
+/**
+ * Cuanto le toco a cada uno, sin mirar quien pago. Es el dato que responde
+ * "cuanto gaste yo", distinto del saldo neto, que responde "cuanto debo".
+ */
+export function calcularConsumoPorPersona(gastos: Gasto[]): ConsumoTotal[] {
+  const acumulado = new Map<string, { nombre: string; total: number }>();
+
+  for (const gasto of gastos) {
+    for (const consumo of gasto.consumos) {
+      const clave = claveParticipante(consumo.participante);
+      const actual = acumulado.get(clave);
+      if (actual === undefined) {
+        acumulado.set(clave, {
+          nombre: consumo.participante.trim(),
+          total: consumo.montoCentavos,
+        });
+      } else {
+        actual.total += consumo.montoCentavos;
+      }
+    }
+  }
+
+  return [...acumulado.values()]
+    .map(({ nombre, total }) => ({ participante: nombre, montoCentavos: total }))
+    .sort((a, b) =>
+      a.montoCentavos !== b.montoCentavos
+        ? b.montoCentavos - a.montoCentavos
+        : a.participante.localeCompare(b.participante, "es-AR"),
+    );
+}
+
+/** Total gastado por el grupo, que es la suma de lo que puso cada pagador. */
+export function calcularTotalGastado(gastos: Gasto[]): number {
+  return gastos.reduce((acc, gasto) => acc + gasto.montoTotalCentavos, 0);
+}

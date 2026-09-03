@@ -23,8 +23,13 @@ import { interpretarConOpenRouter } from "./openRouterClient";
 
 const hayKey = (process.env.OPENROUTER_API_KEY ?? "") !== "";
 
-/** Los modelos gratuitos tienen latencia muy variable: se reintenta una vez. */
-const REINTENTOS = 1;
+/**
+ * Los modelos gratuitos tienen latencia muy variable y a veces superan el
+ * timeout de 9s del cliente. No es un fallo de la app —el usuario recibe el
+ * error y la carga manual— pero volveria inutilizable a esta suite, asi que se
+ * reintenta un par de veces antes de dar el caso por perdido.
+ */
+const REINTENTOS = 3;
 
 async function interpretar(texto: string) {
   let ultimoError: unknown;
@@ -107,11 +112,11 @@ describe.skipIf(!hayKey)("interpretacion contra el proveedor real", () => {
       const { saldos, transferencias } = resolver(aBorrador(gastos));
 
       // El PRD habla de "$20.000 por persona", pero eso es una idealizacion:
-      // $40.000 y $5.000 no son divisibles por 3. El reparto le da el centavo
-      // sobrante al primer participante, asi que los netos caen a un par de
-      // centavos de la cifra redonda. Se compara con tolerancia y se verifica
-      // lo que si tiene que valer exacto: que no se pierda ni un centavo.
-      const CENTAVOS_DE_TOLERANCIA = 5;
+      // $40.000 y $5.000 no son divisibles por 3. El reparto redondea la parte
+      // de cada uno al peso entero y le deja el resto al pagador, asi que los
+      // netos caen a unos pesos de la cifra redonda. Se compara con tolerancia y
+      // se verifica lo que si tiene que valer exacto: que no se pierda nada.
+      const CENTAVOS_DE_TOLERANCIA = 5 * 100;
       expect(netoDe(saldos, "Juan")).toBeCloseTo(2_000_000, -1);
       expect(Math.abs(netoDe(saldos, "Juan") - 2_000_000)).toBeLessThanOrEqual(
         CENTAVOS_DE_TOLERANCIA,
@@ -131,7 +136,7 @@ describe.skipIf(!hayKey)("interpretacion contra el proveedor real", () => {
         netoDe(saldos, "Juan"),
       );
 
-      const resumen = generarResumen(transferencias);
+      const resumen = generarResumen(borradorAGastos(aBorrador(gastos)), transferencias);
       expect(resumen).toContain("Rodri le debe");
       expect(resumen).toContain("Vos le debe");
       expect(resumen).toContain(formatMonto(netoDe(saldos, "Juan")));
@@ -149,7 +154,9 @@ describe.skipIf(!hayKey)("interpretacion contra el proveedor real", () => {
       const { saldos, transferencias } = resolver(aBorrador(gastos));
       expect(saldos.every((s) => s.netoCentavos === 0)).toBe(true);
       expect(transferencias).toEqual([]);
-      expect(generarResumen(transferencias)).toContain("Nadie le debe nada a nadie");
+      expect(generarResumen(borradorAGastos(aBorrador(gastos)), transferencias)).toContain(
+        "Nadie le debe nada a nadie",
+      );
     },
     TIMEOUT_TEST,
   );

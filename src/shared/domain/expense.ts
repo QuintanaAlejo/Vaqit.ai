@@ -98,3 +98,27 @@ export function esMismoParticipante(a: string, b: string): boolean {
 export function esPlaceholderVos(nombre: string): boolean {
   return esMismoParticipante(nombre, PLACEHOLDER_VOS);
 }
+
+/**
+ * Pone en mayuscula la primera letra y deja el resto como esta: "cena" ->
+ * "Cena", "rodri" -> "Rodri", pero "JUAN" sigue siendo "JUAN".
+ *
+ * Se aplica al entrar al formulario de revision, porque la IA devuelve los
+ * nombres y descripciones tal como aparecen en el texto y suelen venir en
+ * minuscula. No afecta la identidad del participante: claveParticipante ignora
+ * mayusculas, asi que "rodri" y "Rodri" siguen siendo la misma persona.
+ */
+export function capitalizarInicial(texto: string): string {
+  const limpio = texto.trim();
+  if (limpio === "") return "";
+
+  const primera = limpio.charAt(0);
+  const segunda = limpio.charAt(1);
+  // Si la segunda letra ya es mayuscula, el texto tiene una forma deliberada
+  // ("iPhone", "eBay") y capitalizar la primera lo arruinaria ("IPhone").
+  if (segunda !== "" && segunda === segunda.toLocaleUpperCase("es-AR") && /\p{L}/u.test(segunda)) {
+    return limpio;
+  }
+
+  return primera.toLocaleUpperCase("es-AR") + limpio.slice(1);
+}
