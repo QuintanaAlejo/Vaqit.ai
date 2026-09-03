@@ -32,6 +32,12 @@
   --color-alert-ink: #b91c1c;
 
   --font-cosmica: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /*
+   * Tambien se ata --font-sans: de ahi sale el --default-font-family del
+   * preflight de Tailwind, asi que la familia correcta se aplica sin depender
+   * de que regla gane la cascada.
+   */
+  --font-sans: var(--font-cosmica);
 
   --text-caption: 12px;
   --text-caption--line-height: 1.64;

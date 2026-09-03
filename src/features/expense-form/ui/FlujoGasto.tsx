@@ -4,8 +4,10 @@ import { useCallback, useState } from "react";
 import type { BorradorGasto, BorradorSesion } from "@/shared/domain/expense";
 import { formatMontoEditable } from "@/shared/domain/money";
 import { calcularSaldosNetos } from "@/features/settlement/domain/balances";
+import { generarResumen } from "@/features/settlement/domain/summary";
 import { calcularTransferencias } from "@/features/settlement/domain/transfers";
-import { nuevoBorradorGasto } from "@/features/expense-form/domain/borrador";
+import { AccionesCompartir } from "@/features/settlement/ui/AccionesCompartir";
+import { nuevoBorradorGasto, tienePlaceholderVos } from "@/features/expense-form/domain/borrador";
 import { borradorAGastos } from "@/features/expense-form/domain/validation";
 import { interpretarGasto } from "@/features/expense-parsing/api/parseExpenseClient";
 import type { GastoInterpretado } from "@/features/expense-parsing/domain/contract";
@@ -13,6 +15,7 @@ import { EntradaTexto, type EstadoEntrada } from "@/features/expense-parsing/ui/
 import { ResultadoTransferencias } from "@/features/settlement/ui/ResultadoTransferencias";
 import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
+import { IconoAlerta } from "@/shared/ui/Field";
 import { FormularioGasto } from "./FormularioGasto";
 import { claveMonto, useBorradorSesion } from "./useBorradorSesion";
 
@@ -127,6 +130,7 @@ export function FlujoGasto() {
   const gastos = borradorAGastos(sesion);
   const saldos = calcularSaldosNetos(gastos);
   const transferencias = calcularTransferencias(saldos);
+  const resumen = generarResumen(transferencias);
 
   return (
     <div className="flex flex-col gap-4">
@@ -134,12 +138,17 @@ export function FlujoGasto() {
 
       <ResultadoTransferencias transferencias={transferencias} saldos={saldos} />
 
-      <Card className="flex flex-col gap-2">
-        <p className="text-caption text-fog">
-          Las acciones para compartir por WhatsApp y copiar el resumen se agregan en la próxima
-          fase.
-        </p>
-      </Card>
+      <AccionesCompartir resumen={resumen} />
+
+      {tienePlaceholderVos(sesion) ? (
+        <Card className="flex items-start gap-2 border-alert-border bg-alert-soft">
+          <IconoAlerta className="text-alert-ink" />
+          <p className="text-caption text-alert-ink">
+            El resumen todavía dice &quot;Vos&quot;. Volvé a editar y poné tu nombre real para que
+            el resto entienda quién es quién.
+          </p>
+        </Card>
+      ) : null}
 
       <div className="flex flex-col gap-2">
         <Button variante="neutra" onClick={() => setPaso("formulario")}>
