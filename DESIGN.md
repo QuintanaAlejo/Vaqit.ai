@@ -240,6 +240,58 @@ The page follows a centered max-width (1200px) container with generous vertical 
 
 The system’s spatial language is defined by three radii that repeat everywhere: 12px for tags and small controls, 14px for buttons and inputs, and 36px for cards and large surfaces. Pill shapes (10000px) appear only in navigation CTAs. This creates a consistent visual rhythm where corners curve generously on containers but stay controlled on interactive elements. No sharp corners (0px) are used on visible UI — even the smallest chips get 12px rounding. The asymmetry between 14px (buttons) and 36px (cards) is deliberate: buttons feel precise and contained, cards feel inviting and spacious.
 
+---
+
+## Adaptación mobile-first (Vaqit.ai)
+
+> Decisión de proyecto tomada el 2026-09-03. Este style guide fue capturado de un sitio editorial
+> desktop; el flujo central de Vaqit.ai se completa en el celular y se comparte desde WhatsApp mobile
+> (RNF-06 del PRD). Los **tokens** de arriba se respetan tal cual; lo que se adapta es la **escala**.
+> Implementación viva en `src/app/globals.css`.
+
+### Qué se conserva sin cambios
+
+- Toda la paleta zinc y sus roles (`--color-obsidian` para acciones primarias, `--color-cloud` para
+  bordes hairline, `--color-paper` como canvas).
+- Elevación por borde de 1px, nunca por drop shadow, en superficies de contenido.
+- Los radios nombrados: 36px cards, 14px botones e inputs, 12px badges, 10000px pills.
+- Familia tipográfica única. Cosmica no es distribuible públicamente: se usa **DM Sans** (el
+  sustituto que declara este documento) cargada con `next/font/google` y expuesta bajo la variable
+  `--font-cosmica` para no romper la nomenclatura del sistema.
+- `--color-ember` sigue reservado a badges. No se usa como color de marca ni para UI general.
+
+### Qué se adapta
+
+| Aspecto | DESIGN.md original | Vaqit.ai |
+|---------|--------------------|----------|
+| Display | 64px fijo | `clamp(32px, 8vw, 56px)` — `--step-display` |
+| Heading | 40px fijo | `clamp(24px, 6vw, 40px)` — `--step-heading` |
+| Heading sm | 32px fijo | `clamp(20px, 5vw, 32px)` — `--step-heading-sm` |
+| Ancho de contenido | 1200px | `--flow-max-width: 560px` para el wizard; el 1200px queda disponible para una eventual landing |
+| Padding de card | 28px | 20px en mobile, 28px desde el breakpoint `sm` (640px) |
+| Layout | Grid editorial, hero partido | Columna única, sin scroll horizontal (RNF-06) |
+| Inputs | 14px de texto | 16px mínimo — por debajo de 16px iOS Safari hace zoom al enfocar |
+| Controles | Sin mínimo definido | `--tap-target: 44px` de alto mínimo en todo elemento interactivo |
+
+Los tamaños de body (15px), caption (12px) y subheading (20px) no cambian: la densidad compacta del
+sistema ya funciona bien en pantalla chica.
+
+### Extensión de paleta: estado de alerta
+
+AC-01 y AC-07 del PRD exigen resaltar en **rojo claro con ícono de alerta** el placeholder "Vos" y
+los campos ambiguos que bloquean la confirmación. El sistema original es 99% acromático y su única
+excepción, `--color-ember`, está reservada a badges. Se agregan por lo tanto tres tokens, y son la
+**única** extensión cromática permitida:
+
+| Token | Valor | Rol |
+|-------|-------|-----|
+| `--color-alert-soft` | `#fef2f2` | Relleno del campo que requiere atención del usuario |
+| `--color-alert-border` | `#fca5a5` | Borde hairline de ese mismo campo |
+| `--color-alert-ink` | `#b91c1c` | Texto del mensaje y trazo del ícono de alerta |
+
+Se usan **solo** para señalar un dato que el usuario debe corregir antes de poder continuar. No son
+un color de marca ni de UI general, y no habilitan agregar más colores al sistema.
+
 ## Similar Brands
 
 - **Linear** — Same monochromatic zinc-gray palette with hairline borders replacing shadows, and similarly compact 14px body text on generous rounded cards

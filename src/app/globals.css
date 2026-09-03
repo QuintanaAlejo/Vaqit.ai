@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de DESIGN.md (Awesomic — editorial zinc grid).
+ * Cosmica no es una fuente disponible publicamente: DESIGN.md declara DM Sans
+ * como sustituto, y se expone bajo --font-cosmica para no romper la
+ * nomenclatura del style guide.
+ */
+@theme {
+  --color-obsidian: #09090b;
+  --color-graphite: #18181b;
+  --color-slate: #27272a;
+  --color-iron: #3f3f46;
+  --color-steel: #52525b;
+  --color-fog: #71717a;
+  --color-ash: #a1a1aa;
+  --color-mist: #d4d4d8;
+  --color-cloud: #ececee;
+  --color-paper: #f4f4f5;
+  --color-snow: #ffffff;
+  --color-ember: #ff5a00;
+  --color-magenta-spark: #fe45e2;
+
+  /*
+   * Unica extension cromatica a la paleta de DESIGN.md: AC-01 exige resaltar el
+   * placeholder "Vos" y los campos ambiguos en rojo claro, y el sistema es
+   * achromatico salvo el ember (reservado para badges). Ver la seccion
+   * "Adaptacion mobile-first" de DESIGN.md.
+   */
+  --color-alert-soft: #fef2f2;
+  --color-alert-border: #fca5a5;
+  --color-alert-ink: #b91c1c;
+
+  --font-cosmica: var(--font-dm-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --text-caption: 12px;
+  --text-caption--line-height: 1.64;
+  --text-body: 15px;
+  --text-body--line-height: 1.45;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 1.45;
+  --text-subheading: 20px;
+  --text-subheading--line-height: 1.5;
+  --text-heading-sm: 32px;
+  --text-heading-sm--line-height: 1.5;
+  --text-heading: 40px;
+  --text-heading--line-height: 1.28;
+  --text-heading-lg: 56px;
+  --text-heading-lg--line-height: 1.28;
+  --text-display: 64px;
+  --text-display--line-height: 1.12;
+
+  --radius-badges: 12px;
+  --radius-inputs: 14px;
+  --radius-buttons: 14px;
+  --radius-cards: 36px;
+  --radius-icons: 40px;
+  --radius-pills: 10000px;
+
+  --shadow-subtle-2: inset 0 1px 0 0 rgb(228 228 231);
+  --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.04);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * Escala fluida: DESIGN.md define la tipografia para desktop editorial
+ * (display 64px). El flujo de Vaqit.ai es mobile-first (RNF-06), por lo que los
+ * pasos display/heading arrancan chicos y trepan al valor del guide en desktop.
+ */
+:root {
+  --step-display: clamp(32px, 8vw, 56px);
+  --step-heading: clamp(24px, 6vw, 40px);
+  --step-heading-sm: clamp(20px, 5vw, 32px);
+  --flow-max-width: 560px;
+  --card-padding: 20px;
+  --tap-target: 44px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --card-padding: 28px;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-graphite);
+    font-family: var(--font-cosmica);
+    font-size: var(--text-body);
+    line-height: 1.45;
+    /* RNF-06: ningun overflow lateral en viewports chicos. */
+    overflow-x: hidden;
+  }
+
+  /* iOS Safari hace zoom al enfocar inputs de menos de 16px. */
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+    font-size: 16px;
+  }
+
+  button {
+    font-family: inherit;
+  }
+}
+
+@utility text-display-fluid {
+  font-size: var(--step-display);
+  line-height: 1.12;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+@utility text-heading-fluid {
+  font-size: var(--step-heading);
+  line-height: 1.28;
+  font-weight: 600;
+}
+
+@utility text-heading-sm-fluid {
+  font-size: var(--step-heading-sm);
+  line-height: 1.3;
+  font-weight: 600;
+}

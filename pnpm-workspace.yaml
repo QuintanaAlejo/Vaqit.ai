@@ -1,0 +1,4 @@
+# unrs-resolver es el resolver nativo que usa eslint-config-next; su postinstall
+# selecciona el binario de la plataforma y sin el ESLint no resuelve imports.
+allowBuilds:
+  unrs-resolver: true
