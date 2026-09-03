@@ -17,8 +17,12 @@ import { construirUserPrompt, SYSTEM_PROMPT } from "../domain/prompts/parseGasto
 
 const URL_OPENROUTER = "https://openrouter.ai/api/v1/chat/completions";
 
-/** Modelo por defecto: gratuito en OpenRouter, intercambiable por env var. */
-const MODELO_POR_DEFECTO = "meta-llama/llama-3.3-70b-instruct:free";
+/**
+ * Modelo por defecto: gratuito en OpenRouter, intercambiable por OPENROUTER_MODEL.
+ * Se eligio por velocidad: la extraccion es una tarea facil y lo que aprieta es
+ * RNF-01 (p95 < 10s), no la capacidad de razonamiento.
+ */
+const MODELO_POR_DEFECTO = "minimax/minimax-m3:free";
 
 /**
  * Presupuesto de tiempo. RNF-01 exige p95 < 10s para todo el request; el corte

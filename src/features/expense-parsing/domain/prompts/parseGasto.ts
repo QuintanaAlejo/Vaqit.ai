@@ -7,8 +7,13 @@ import { MAX_LARGO_TEXTO } from "../contract";
  *
  * Historial:
  *  v1 — version inicial del MVP.
+ *  v2 — se agrega la regla de participantes implicitos. Con v1, un texto como
+ *       "Juan pago la carne, yo la bebida y Rodri el helado" (AC-02) devolvia
+ *       los gastos con la lista de consumos vacia, porque el texto no dice
+ *       explicitamente quien consumio cada cosa. Un gasto sin participantes no
+ *       se puede calcular.
  */
-export const VERSION_PROMPT = "v1";
+export const VERSION_PROMPT = "v2";
 
 /**
  * El modelo devuelve los montos como el TEXTO CRUDO del input, no como numero.
@@ -57,7 +62,13 @@ REGLAS
 
 7. NOMBRES REPETIDOS. Si el mismo nombre aparece refiriéndose a dos personas distintas y no se pueden distinguir, repetilos igual: el sistema le va a pedir al usuario que los diferencie.
 
-8. TEXTO SIN GASTOS. Si el texto no describe ningún gasto compartido, devolvé { "gastos": [] }.`;
+8. PARTICIPANTES IMPLÍCITOS. Si el texto no dice explícitamente quién consumió un gasto, pero menciona un grupo de personas (porque pagaron algo, o porque están nombradas en el texto), asumí que ese gasto lo consumieron TODAS ellas en partes iguales: poné "modoReparto": "equitativo" e incluí a todas en "consumos" con "monto": null.
+
+   Ejemplo: "Juan pagó 40.000 de carne, yo puse 15.000 de bebida y Rodri gastó 5.000 en helado" son tres gastos, y los tres los consumieron Juan, Vos y Rodri en partes iguales, porque el texto describe una salida compartida entre esas tres personas.
+
+   Nunca devuelvas "consumos": [] si hay al menos una persona mencionada en el texto. Un gasto sin participantes no se puede repartir. Esta regla no aplica cuando el texto sí dice quién consumió qué: en ese caso mandan los participantes que menciona.
+
+9. TEXTO SIN GASTOS. Si el texto no describe ningún gasto compartido, devolvé { "gastos": [] }.`;
 
 export function construirUserPrompt(texto: string): string {
   // El texto ya viene validado por el schema, pero se recorta por si acaso:

@@ -11,6 +11,7 @@ la app quedó usable de punta a punta antes de depender de un proveedor de IA ex
 | 2 | [Interfaz y carga manual](./fase-2-ui-carga-manual.md) | App usable de punta a punta sin IA (RF-17) |
 | 3 | [Interpretación por IA y rate limit](./fase-3-ia-rate-limit.md) | Camino principal: texto libre a datos estructurados, con límite de uso |
 | 4 | [Compartir y cierre](./fase-4-compartir.md) | Salida por WhatsApp y portapapeles, y estado final del MVP |
+| — | [Verificación contra la IA real](./verificacion-ia-real.md) | Elección de modelo, bug del prompt encontrado y corregido, resultados |
 
 ## Cómo leer esto
 
@@ -22,7 +23,8 @@ la app quedó usable de punta a punta antes de depender de un proveedor de IA ex
 
 ## Lo que falta
 
-Al cierre de la fase 4 quedan dos huecos, ambos documentados en su fase:
+Al cierre de la fase 4 quedaban dos huecos. Uno ya está cerrado:
 
-1. Ninguna llamada real al proveedor de IA: la capa está testeada con respuestas simuladas.
+1. ~~Ninguna llamada real al proveedor de IA.~~ **Cerrado**: se verificó contra OpenRouter con
+   `minimax/minimax-m3:free`. Ver [Verificación contra la IA real](./verificacion-ia-real.md).
 2. Ninguna interacción verificada en un browser real: se verificó el render y la lógica, no el click.

@@ -31,7 +31,7 @@ Copiá `.env.example` a `.env.local`:
 | Variable | Requerida | Para qué |
 |----------|-----------|----------|
 | `OPENROUTER_API_KEY` | Para la interpretación por IA | Key de [OpenRouter](https://openrouter.ai/) |
-| `OPENROUTER_MODEL` | No | Modelo a usar. Default: `meta-llama/llama-3.3-70b-instruct:free` |
+| `OPENROUTER_MODEL` | No | Modelo a usar. Default: `minimax/minimax-m3:free` |
 
 **La app funciona sin la key.** Sin ella, el endpoint responde `503 MISSING_CONFIG` y el usuario
 completa el flujo por carga manual (RF-17), que no toca la IA en ningún punto.
@@ -121,3 +121,24 @@ significativos:
 | `rateLimit.test.ts` + `handler.test.ts` | RNF-04 / AC-12: el excedente no invoca al proveedor |
 | `normalizarGasto.test.ts` | RF-04, AC-07/08/09/10: la ambigüedad se propaga como `null` |
 | `flujoCompleto.test.ts` | Integración: borrador → validación → cálculo → resumen |
+| `iaReal.test.ts` | Verificación contra el proveedor de IA real (opt-in, ver abajo) |
+
+### Verificación contra la IA real
+
+`iaReal.test.ts` es la única suite que sale a la red y está apagada por defecto: sin
+`OPENROUTER_API_KEY` en el entorno se saltea entera, así que `pnpm test` sigue siendo offline y
+determinista. Para correrla:
+
+```bash
+set -a; . ./.env.local; set +a
+pnpm exec vitest run iaReal
+```
+
+Recorre la cadena completa —proveedor, normalización, validación, cálculo y resumen— con los textos
+literales del PRD. Es lo que detecta una regresión del prompt o un cambio de comportamiento del
+modelo, que ningún test con respuestas simuladas puede ver.
+
+**Sobre el centavo del AC-02:** el PRD dice "$20.000 por persona", pero $40.000 y $5.000 no son
+divisibles por 3. El reparto asigna el centavo sobrante al primer participante, así que los saldos
+caen a uno o dos centavos de la cifra redonda. El test compara con tolerancia y verifica en cambio
+el invariante que sí es exacto: la suma de todos los saldos netos da cero.
