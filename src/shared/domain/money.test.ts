@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMonto, parseMonto } from "./money";
+import { filtrarTextoMonto, formatMonto, parseMonto } from "./money";
 
 describe("parseMonto — AC-06 / RNF-05", () => {
   it("interpreta como sesenta mil todos los formatos equivalentes del AC-06", () => {
@@ -62,6 +62,15 @@ describe("parseMonto — AC-06 / RNF-05", () => {
     expect(parseMonto("-500")).toBeNull();
     expect(parseMonto("1.2.3,4,5")).toBeNull();
     expect(parseMonto("12a34")).toBeNull();
+  });
+});
+
+describe("filtrarTextoMonto", () => {
+  it("descarta letras y otros caracteres que no sean digitos, punto o coma", () => {
+    expect(filtrarTextoMonto("12a34")).toBe("1234");
+    expect(filtrarTextoMonto("abc")).toBe("");
+    expect(filtrarTextoMonto("$60.000")).toBe("60.000");
+    expect(filtrarTextoMonto("60,000.50")).toBe("60,000.50");
   });
 });
 

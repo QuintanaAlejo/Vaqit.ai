@@ -10,6 +10,15 @@
 const RUIDO = /(?:ars|usd|uyu|eur|pesos?|dolar(?:es)?|us\$|u\$s|\$|€|\s| | | )/gi;
 
 /**
+ * Filtra lo que el usuario tipea en un campo de monto a medida que escribe,
+ * dejando solo digitos, punto y coma. Sin esto el input acepta cualquier texto
+ * y solo se descubre que es invalido al validar, en vez de impedirlo al tipear.
+ */
+export function filtrarTextoMonto(texto: string): string {
+  return texto.replace(/[^\d.,]/g, "");
+}
+
+/**
  * Convierte texto libre a centavos. Devuelve null si no hay un numero
  * interpretable, que es lo que deja el campo vacio en el formulario (AC-08).
  */
