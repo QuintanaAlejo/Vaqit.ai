@@ -3,8 +3,11 @@
 import { useCallback, useMemo, useReducer } from "react";
 import type { BorradorGasto, BorradorSesion, ModoReparto } from "@/shared/domain/expense";
 import {
+  agregarParticipanteGlobal,
+  alternarParticipanteEnGasto,
   nuevoBorradorGasto,
-  nuevoConsumo,
+  participantesDeSesion,
+  quitarParticipanteGlobal,
   renombrarParticipante,
 } from "@/features/expense-form/domain/borrador";
 import { validarSesion } from "@/features/expense-form/domain/validation";
@@ -31,9 +34,8 @@ type Accion =
   | { tipo: "setTexto"; clave: string; texto: string }
   | { tipo: "editarGasto"; gastoId: string; cambios: Partial<BorradorGasto> }
   | { tipo: "setModoReparto"; gastoId: string; modo: ModoReparto }
-  | { tipo: "agregarGasto"; ids: [string, string, string] }
+  | { tipo: "agregarGasto"; gastoId: string; idsConsumo: string[] }
   | { tipo: "quitarGasto"; gastoId: string }
-  | { tipo: "agregarConsumo"; gastoId: string; id: string }
   | { tipo: "quitarConsumo"; gastoId: string; consumoId: string }
   | {
       tipo: "editarConsumo";
@@ -41,6 +43,9 @@ type Accion =
       consumoId: string;
       cambios: { participante?: string; montoCentavos?: number | null };
     }
+  | { tipo: "alternarParticipante"; gastoId: string; nombre: string; idNuevoConsumo: string }
+  | { tipo: "agregarParticipanteGlobal"; nombre: string; ids: string[] }
+  | { tipo: "quitarParticipanteGlobal"; nombre: string }
   | { tipo: "renombrar"; desde: string; hacia: string };
 
 const VACIO: Estado = { sesion: { gastos: [] }, textos: {} };
@@ -89,28 +94,24 @@ function reducer(estado: Estado, accion: Accion): Estado {
             : gasto.consumos,
       }));
 
-    case "agregarGasto":
+    case "agregarGasto": {
+      const participantesActuales = participantesDeSesion(estado.sesion);
       return {
         ...estado,
         sesion: {
           gastos: [
             ...estado.sesion.gastos,
-            nuevoBorradorGasto(accion.ids[0], [accion.ids[1], accion.ids[2]]),
+            nuevoBorradorGasto(accion.gastoId, participantesActuales, accion.idsConsumo),
           ],
         },
       };
+    }
 
     case "quitarGasto":
       return {
         ...estado,
         sesion: { gastos: estado.sesion.gastos.filter((g) => g.id !== accion.gastoId) },
       };
-
-    case "agregarConsumo":
-      return mapearGasto(estado, accion.gastoId, (gasto) => ({
-        ...gasto,
-        consumos: [...gasto.consumos, nuevoConsumo(accion.id)],
-      }));
 
     case "quitarConsumo":
       return mapearGasto(estado, accion.gastoId, (gasto) => ({
@@ -125,6 +126,23 @@ function reducer(estado: Estado, accion: Accion): Estado {
           c.id === accion.consumoId ? { ...c, ...accion.cambios } : c,
         ),
       }));
+
+    case "alternarParticipante":
+      return mapearGasto(estado, accion.gastoId, (gasto) =>
+        alternarParticipanteEnGasto(gasto, accion.nombre, accion.idNuevoConsumo),
+      );
+
+    case "agregarParticipanteGlobal":
+      return {
+        ...estado,
+        sesion: agregarParticipanteGlobal(estado.sesion, accion.nombre, accion.ids),
+      };
+
+    case "quitarParticipanteGlobal":
+      return {
+        ...estado,
+        sesion: quitarParticipanteGlobal(estado.sesion, accion.nombre),
+      };
 
     case "renombrar":
       return {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { BorradorGasto, BorradorSesion } from "@/shared/domain/expense";
+import { PLACEHOLDER_VOS, type BorradorGasto, type BorradorSesion } from "@/shared/domain/expense";
 import { formatMontoEditable } from "@/shared/domain/money";
 import { calcularSaldosNetos } from "@/features/settlement/domain/balances";
 import { generarResumen } from "@/features/settlement/domain/summary";
@@ -49,7 +49,9 @@ export function FlujoGasto() {
 
   const cargarManual = useCallback(() => {
     setErrorEntrada(null);
-    irAFormulario({ gastos: [nuevoBorradorGasto(nuevoId(), [nuevoId(), nuevoId()])] });
+    irAFormulario({
+      gastos: [nuevoBorradorGasto(nuevoId(), [PLACEHOLDER_VOS], [nuevoId()])],
+    });
   }, [irAFormulario, nuevoId]);
 
   const interpretar = useCallback(async () => {

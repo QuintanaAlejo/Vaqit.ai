@@ -1,5 +1,6 @@
 import {
   claveParticipante,
+  esMismoParticipante,
   PLACEHOLDER_VOS,
   type BorradorConsumo,
   type BorradorGasto,
@@ -18,18 +19,30 @@ export function nuevoConsumo(id: string, participante = ""): BorradorConsumo {
 }
 
 /**
- * Gasto vacio para la carga manual (RF-17). Arranca con dos participantes
- * porque un gasto grupal de una sola persona no tiene sentido, y con el
- * placeholder "Vos" en el primero para que el usuario se identifique.
+ * Gasto nuevo (RF-17, o al agregar otro gasto sobre una sesion existente).
+ * Arranca incluyendo a todos los participantes ya conocidos de la sesion: la
+ * mayoria de los gastos de un grupo los consumen todos, asi que el caso comun
+ * no exige tildar a nadie, y las excepciones se destildan con el toggle.
+ *
+ * `ids` trae un id por cada nombre de `participantes`, en el mismo orden y con
+ * la misma longitud: es una precondicion de quien llama, no algo a validar aca.
  */
-export function nuevoBorradorGasto(id: string, idsConsumo: [string, string]): BorradorGasto {
+export function nuevoBorradorGasto(
+  id: string,
+  participantes: string[],
+  ids: string[],
+): BorradorGasto {
   return {
     id,
     descripcion: "",
     montoTotalCentavos: null,
-    pagador: PLACEHOLDER_VOS,
+    // Si "Vos" ya no esta en la sesion (el usuario lo reemplazo por su nombre),
+    // no hay que resucitarlo: se deja sin pagador para que el usuario elija.
+    pagador: participantes.some((nombre) => esMismoParticipante(nombre, PLACEHOLDER_VOS))
+      ? PLACEHOLDER_VOS
+      : null,
     modoReparto: "equitativo",
-    consumos: [nuevoConsumo(idsConsumo[0], PLACEHOLDER_VOS), nuevoConsumo(idsConsumo[1])],
+    consumos: participantes.map((nombre, indice) => nuevoConsumo(ids[indice]!, nombre)),
   };
 }
 
@@ -50,6 +63,75 @@ export function participantesDeSesion(sesion: BorradorSesion): string[] {
     }
   }
   return [...vistos.values()];
+}
+
+/** True si el participante tiene un consumo cargado en ese gasto puntual. */
+export function estaIncluido(gasto: BorradorGasto, nombre: string): boolean {
+  return gasto.consumos.some((c) => esMismoParticipante(c.participante, nombre));
+}
+
+/**
+ * Prende o apaga a un participante dentro de un gasto puntual: si ya estaba
+ * incluido se quita su consumo, si no estaba se agrega uno nuevo en null (sin
+ * monto asignado todavia). Es la base del selector compacto por ticket: el
+ * registro de nombres es global, pero quien participo de cada gasto es local
+ * a ese gasto (AC-13, AC-14 — no todos los gastos los consume todo el grupo).
+ */
+export function alternarParticipanteEnGasto(
+  gasto: BorradorGasto,
+  nombre: string,
+  idNuevoConsumo: string,
+): BorradorGasto {
+  if (estaIncluido(gasto, nombre)) {
+    return {
+      ...gasto,
+      consumos: gasto.consumos.filter((c) => !esMismoParticipante(c.participante, nombre)),
+    };
+  }
+  return { ...gasto, consumos: [...gasto.consumos, nuevoConsumo(idNuevoConsumo, nombre)] };
+}
+
+/**
+ * Agrega un participante nuevo a toda la sesion (registro global de arriba).
+ * Se lo incluye de entrada en todos los gastos existentes porque el caso
+ * comun es que participe de todo; si no participo de alguno puntual, se lo
+ * destilda ahi con el toggle. `ids` trae un id por cada gasto de la sesion, en
+ * el mismo orden que `sesion.gastos` y con la misma longitud (precondicion de
+ * quien llama).
+ */
+export function agregarParticipanteGlobal(
+  sesion: BorradorSesion,
+  nombre: string,
+  ids: string[],
+): BorradorSesion {
+  const limpio = nombre.trim();
+  if (limpio === "") return sesion;
+
+  const yaExiste = participantesDeSesion(sesion).some((n) => esMismoParticipante(n, limpio));
+  if (yaExiste) return sesion;
+
+  return {
+    gastos: sesion.gastos.map((gasto, indice) => ({
+      ...gasto,
+      consumos: [...gasto.consumos, nuevoConsumo(ids[indice]!, limpio)],
+    })),
+  };
+}
+
+/**
+ * Quita a un participante de toda la sesion: su consumo desaparece de cada
+ * gasto, y si era el pagador de alguno ese campo queda vacio para que el
+ * usuario elija a otra persona en su lugar.
+ */
+export function quitarParticipanteGlobal(sesion: BorradorSesion, nombre: string): BorradorSesion {
+  return {
+    gastos: sesion.gastos.map((gasto) => ({
+      ...gasto,
+      pagador:
+        gasto.pagador !== null && esMismoParticipante(gasto.pagador, nombre) ? null : gasto.pagador,
+      consumos: gasto.consumos.filter((c) => !esMismoParticipante(c.participante, nombre)),
+    })),
+  };
 }
 
 /**

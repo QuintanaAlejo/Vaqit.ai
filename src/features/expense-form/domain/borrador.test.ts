@@ -1,19 +1,28 @@
 import { describe, expect, it } from "vitest";
 import type { BorradorSesion } from "@/shared/domain/expense";
 import {
+  agregarParticipanteGlobal,
+  alternarParticipanteEnGasto,
+  estaIncluido,
   nuevoBorradorGasto,
   participantesDeSesion,
+  quitarParticipanteGlobal,
   renombrarParticipante,
   tienePlaceholderVos,
 } from "./borrador";
 
 describe("nuevoBorradorGasto — RF-17", () => {
-  it("arranca vacio, con Vos como pagador y dos filas de participante", () => {
-    const gasto = nuevoBorradorGasto("g1", ["c1", "c2"]);
+  it("arranca vacio, con Vos como pagador y un consumo por cada participante conocido", () => {
+    const gasto = nuevoBorradorGasto("g1", ["Vos", "Juan"], ["c1", "c2"]);
     expect(gasto.montoTotalCentavos).toBeNull();
     expect(gasto.pagador).toBe("Vos");
     expect(gasto.modoReparto).toBe("equitativo");
-    expect(gasto.consumos.map((c) => c.participante)).toEqual(["Vos", ""]);
+    expect(gasto.consumos.map((c) => c.participante)).toEqual(["Vos", "Juan"]);
+  });
+
+  it("no le asigna pagador si Vos ya no esta entre los participantes conocidos", () => {
+    const gasto = nuevoBorradorGasto("g1", ["Ale", "Juan"], ["c1", "c2"]);
+    expect(gasto.pagador).toBeNull();
   });
 });
 
@@ -90,6 +99,79 @@ describe("renombrarParticipante — RF-05", () => {
 
   it("ignora un nombre nuevo en blanco en vez de borrar el participante", () => {
     expect(renombrarParticipante(sesion, "Vos", "   ")).toBe(sesion);
+  });
+});
+
+describe("estaIncluido / alternarParticipanteEnGasto", () => {
+  const gasto: BorradorSesion["gastos"][number] = {
+    id: "g1",
+    descripcion: "previa",
+    montoTotalCentavos: 1000,
+    pagador: "Vos",
+    modoReparto: "equitativo",
+    consumos: [{ id: "c1", participante: "Vos", montoCentavos: null }],
+  };
+
+  it("detecta si un nombre ya tiene un consumo en ese gasto", () => {
+    expect(estaIncluido(gasto, "Vos")).toBe(true);
+    expect(estaIncluido(gasto, "vos")).toBe(true);
+    expect(estaIncluido(gasto, "Juan")).toBe(false);
+  });
+
+  it("agrega un consumo nuevo si el nombre no estaba incluido", () => {
+    const actualizado = alternarParticipanteEnGasto(gasto, "Juan", "c2");
+    expect(actualizado.consumos.map((c) => c.participante)).toEqual(["Vos", "Juan"]);
+  });
+
+  it("quita el consumo si el nombre ya estaba incluido", () => {
+    const actualizado = alternarParticipanteEnGasto(gasto, "Vos", "c2");
+    expect(actualizado.consumos).toEqual([]);
+  });
+});
+
+describe("agregarParticipanteGlobal / quitarParticipanteGlobal", () => {
+  const sesion: BorradorSesion = {
+    gastos: [
+      {
+        id: "g1",
+        descripcion: "previa",
+        montoTotalCentavos: 1000,
+        pagador: "Vos",
+        modoReparto: "equitativo",
+        consumos: [{ id: "c1", participante: "Vos", montoCentavos: null }],
+      },
+      {
+        id: "g2",
+        descripcion: "cena",
+        montoTotalCentavos: 2000,
+        pagador: "Juan",
+        modoReparto: "equitativo",
+        consumos: [{ id: "c2", participante: "Juan", montoCentavos: null }],
+      },
+    ],
+  };
+
+  it("incluye al nuevo participante en todos los gastos existentes", () => {
+    const conAle = agregarParticipanteGlobal(sesion, "Ale", ["nuevo1", "nuevo2"]);
+    // "Ale" queda al final de los consumos del primer gasto, asi que aparece
+    // ahi antes que "Juan" (que recien se ve al escanear el segundo gasto).
+    expect(participantesDeSesion(conAle)).toEqual(["Vos", "Ale", "Juan"]);
+    expect(conAle.gastos[0]?.consumos.map((c) => c.participante)).toEqual(["Vos", "Ale"]);
+    expect(conAle.gastos[1]?.consumos.map((c) => c.participante)).toEqual(["Juan", "Ale"]);
+  });
+
+  it("ignora un nombre repetido o en blanco", () => {
+    expect(agregarParticipanteGlobal(sesion, "vos", ["n1", "n2"])).toBe(sesion);
+    expect(agregarParticipanteGlobal(sesion, "   ", ["n1", "n2"])).toBe(sesion);
+  });
+
+  it("quita al participante de todos los gastos y vacia el pagador donde coincidia", () => {
+    const sinVos = quitarParticipanteGlobal(sesion, "Vos");
+    expect(sinVos.gastos[0]?.consumos).toEqual([]);
+    expect(sinVos.gastos[0]?.pagador).toBeNull();
+    // No afecta al otro gasto, que no tenia a Vos ni como pagador ni como consumo.
+    expect(sinVos.gastos[1]?.consumos.map((c) => c.participante)).toEqual(["Juan"]);
+    expect(sinVos.gastos[1]?.pagador).toBe("Juan");
   });
 });
 
