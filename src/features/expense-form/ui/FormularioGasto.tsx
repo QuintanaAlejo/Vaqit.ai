@@ -232,7 +232,7 @@ function GastoEditable({
   };
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Card className="relative flex flex-col gap-4 !rounded-b-[var(--radius-badges)] font-ticket">
       <header className="flex items-center justify-between gap-2">
         <h2 className="text-subheading font-semibold text-obsidian">
           {gasto.descripcion.trim() === "" ? `Gasto ${indice + 1}` : gasto.descripcion}
@@ -247,6 +247,8 @@ function GastoEditable({
           </button>
         ) : null}
       </header>
+
+      <Perforacion />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idBase}-desc`}>Descripción</Label>
@@ -360,6 +362,8 @@ function GastoEditable({
         ))}
         {errorTotalConsumos ? <Mensaje tono="error">{errorTotalConsumos.mensaje}</Mensaje> : null}
       </div>
+
+      <BordeTicket />
     </Card>
   );
 }
@@ -424,12 +428,15 @@ function ParticipantesToggle({
           >
             {nombre}
             {gasto.modoReparto === "individual" ? (
-              <span className="relative">
-                <span
-                  className={`pointer-events-none absolute top-1/2 left-1.5 -translate-y-1/2 ${
-                    errorConsumo !== undefined ? "text-alert-ink" : "text-cloud"
-                  }`}
-                >
+              // Fondo propio, distinto al del chip: asi se nota a simple vista
+              // que ahi adentro se escribe, en vez de leerse como parte del
+              // nombre.
+              <span
+                className={`flex items-center gap-0.5 rounded-[var(--radius-badges)] px-1.5 ${
+                  errorConsumo !== undefined ? "bg-snow" : "bg-iron"
+                }`}
+              >
+                <span className={errorConsumo !== undefined ? "text-alert-ink" : "text-cloud"}>
                   $
                 </span>
                 <input
@@ -450,7 +457,7 @@ function ParticipantesToggle({
                       cambios: { montoCentavos: parseMonto(filtrado) },
                     });
                   }}
-                  className={`h-6 w-16 rounded-[var(--radius-badges)] bg-transparent pl-4 text-caption outline-none ${
+                  className={`h-6 w-14 bg-transparent text-caption outline-none ${
                     errorConsumo !== undefined
                       ? "text-alert-ink placeholder:text-alert-ink"
                       : "text-snow placeholder:text-cloud"
@@ -576,6 +583,59 @@ function ParticipantesAmbiguos({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Linea de perforacion que separa el encabezado del resto del ticket: una
+ * guia punteada con una muesca circular a cada lado, del color del canvas,
+ * que "muerde" el borde de la tarjeta para simular el troquelado de un ticket
+ * real. Usa margen negativo igual al padding de la tarjeta para llegar hasta
+ * su borde exterior.
+ */
+function Perforacion() {
+  return (
+    <div className="relative h-4 mx-[calc(var(--card-padding)*-1)]">
+      <div className="absolute inset-x-3 top-1/2 border-t border-dashed border-mist" />
+      <span className="absolute top-1/2 left-0 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-paper" />
+      <span className="absolute top-1/2 right-0 h-4 w-4 translate-x-1/2 -translate-y-1/2 rounded-full bg-paper" />
+    </div>
+  );
+}
+
+/**
+ * Un diente triangular por tile, a lo ancho de la tira: la region opaca (visible,
+ * blanca) forma un triangulo apuntando hacia abajo por cada 16x10; el resto queda
+ * transparente y deja ver el canvas. Es la misma idea que Perforacion pero como
+ * mascara en vez de un circulo solido, para poder repetirla sin limite de ancho.
+ */
+const TILE_DIENTES = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 10"><polygon points="0,0 16,0 8,10" fill="black"/></svg>',
+)}`;
+
+/**
+ * Borde inferior troquelado: una tira blanca del mismo color que la tarjeta,
+ * recortada en dientes triangulares, que se superpone al borde inferior real
+ * para simular el papel cortado de un ticket. Los 12px de las esquinas quedan
+ * libres para no pelear con el radio redondeado de ahi.
+ */
+function BordeTicket() {
+  const mascara = `url("${TILE_DIENTES}")`;
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute -bottom-[5px] left-3 right-3 h-[10px] bg-snow"
+      style={{
+        maskImage: mascara,
+        WebkitMaskImage: mascara,
+        maskRepeat: "repeat-x",
+        WebkitMaskRepeat: "repeat-x",
+        maskSize: "16px 10px",
+        WebkitMaskSize: "16px 10px",
+        maskPosition: "left top",
+        WebkitMaskPosition: "left top",
+      }}
+    />
   );
 }
 

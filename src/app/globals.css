@@ -39,6 +39,14 @@
    */
   --font-sans: var(--font-cosmica);
 
+  /*
+   * Unica excepcion a la regla de familia tipografica unica de DESIGN.md: una
+   * mono para que la tarjeta de cada gasto se lea como el ticket que emula
+   * (troquelado + borde dentado). Se aplica solo ahi via la clase `font-ticket`,
+   * nunca al resto de la interfaz.
+   */
+  --font-ticket: var(--font-space-mono), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
   --text-caption: 12px;
   --text-caption--line-height: 1.64;
   --text-body: 15px;
